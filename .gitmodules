@@ -1,0 +1,3 @@
+[submodule "extlibs/rust-toml"]
+	path = extlibs/rust-toml
+	url = https://github.com/wycats/rust-toml.git
