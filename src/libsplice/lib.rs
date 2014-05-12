@@ -6,6 +6,8 @@
 use std::io::{TcpStream, IoResult};
 use std::io::net::ip::{SocketAddr, Ipv4Addr};
 
+pub mod conf;
+
 pub fn connect(addr: SocketAddr) -> IoResult<(Upstream, Downstream)> {
     let stream = try!(TcpStream::connect(addr));
     Ok((
