@@ -1,5 +1,5 @@
 RUSTC ?= rustc
-RUST_FLAGS ?=
+RUST_FLAGS ?= -O
 DEPS = -L extlibs/rust-toml/lib -L lib
 
 .PHONY: deps libsplice spliced splice libdir bindir
@@ -18,14 +18,14 @@ bindir:
 	mkdir -p bin
 
 libsplice: src/libsplice/lib.rs libdir deps
-	$(RUSTC) $(DEPS) -O --out-dir lib $<
+	$(RUSTC) $(DEPS) $(RUST_FLAGS) --out-dir lib $<
 
-#spliced: src/spliced/main.rs bindir deps libsplice
-#	$(RUSTC) $(DEPS) -O --out-dir bin $<
+spliced: src/spliced/main.rs bindir deps libsplice
+	$(RUSTC) $(DEPS) $(RUST_FLAGS) --out-dir bin $<
 
 #splice: src/splice/main.rs bindir deps libsplice
-#	$(RUSTC) $(DEPS) -O --out-dir bin $<
+#	$(RUSTC) $(DEPS) $(RUST_FLAGS) --out-dir bin $<
 
 clean:
-#	rm -f bin/*
+	rm -f bin/*
 	rm -f lib/*
