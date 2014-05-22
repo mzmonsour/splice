@@ -25,23 +25,20 @@ pub fn load(loc: &Path) -> Option<Config> {
         Err(e) => return None
     };
     Some(Config {
-        default_server: SocketAddr {
-            ip: match FromStr::from_str(*
-                    match toml.lookup("default_address").and_then(|a| a.get_str()) {
-                        Some(v) => v,
-                        None => return None,
-                    }) {
-                    Some(v) => v,
-                    None => return None,
-                },
-            port: match toml.lookup("default_port").and_then(|a| a.get_int()) {
-                      Some(v) => v as u16,
-                      None => return None,
-                  },
-        }
+        default_server_addr:
+            match toml.lookup("default_address").and_then(|a| a.get_str()) {
+                 Some(v) => v.clone(),
+                 None => return None,
+            },
+        default_server_port:
+            match toml.lookup("default_port").and_then(|a| a.get_int()) {
+                Some(v) => v as u16,
+                None => return None,
+            },
     })
 }
 
 pub struct Config {
-    pub default_server: SocketAddr
+    pub default_server_addr: StrBuf,
+    pub default_server_port: u16,
 }
