@@ -30,7 +30,7 @@ pub fn negotiate(stream: &mut TcpStream, auth: &Option<AuthMethod>) -> Result<()
     match *auth {
         Some(FileSecret(ref p)) => {
             stream.write_be_i32(splice::proto::FileSecret as i32);
-            auth_file_secret(p)
+            auth_file_secret(stream, p)
         },
         None => {
             stream.write_be_i32(splice::proto::NoAuth as i32);
@@ -40,6 +40,6 @@ pub fn negotiate(stream: &mut TcpStream, auth: &Option<AuthMethod>) -> Result<()
 }
 
 // TODO: Implement file based secret authentication method
-fn auth_file_secret(path: &Path) -> Result<(), NegotiateError> {
+fn auth_file_secret(stream: &mut TcpStream, path: &Path) -> Result<(), NegotiateError> {
     Err(AuthenticationFailed)
 }
