@@ -8,11 +8,11 @@ use super::proto;
 
 pub struct Server {
     acceptor: TcpAcceptor,
-    auth: Option<proto::AuthType>,
+    auth: Option<proto::AuthMethod>,
 }
 
 impl Server {
-    pub fn new(addr: &str, port: u16, auth: Option<proto::AuthType>) -> IoResult<Server> {
+    pub fn new(addr: &str, port: u16, auth: Option<proto::AuthMethod>) -> IoResult<Server> {
         let listener = try!(TcpListener::bind(addr, port));
         Ok(Server {
             acceptor: try!(listener.listen()),
@@ -30,7 +30,7 @@ impl Server {
 
 pub struct FutureClient {
     stream: TcpStream,
-    auth: Option<proto::AuthType>,
+    auth: Option<proto::AuthMethod>,
 }
 
 impl FutureClient {
