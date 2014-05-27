@@ -67,7 +67,7 @@ pub struct Buffer {
     path:   ~str,
     id:     Object,
     start:  uint,
-    buf:    Vec<StrBuf>
+    buf:    Vec<String>
 }
 
 impl Buffer {

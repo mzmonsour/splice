@@ -39,6 +39,6 @@ pub fn load(loc: &Path) -> Option<Config> {
 }
 
 pub struct Config {
-    pub default_server_addr: StrBuf,
+    pub default_server_addr: String,
     pub default_server_port: u16,
 }
