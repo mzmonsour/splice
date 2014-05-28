@@ -1,3 +1,6 @@
 [submodule "extlibs/rust-toml"]
 	path = extlibs/rust-toml
 	url = https://github.com/wycats/rust-toml.git
+[submodule "extlibs/ncurses-rs"]
+	path = extlibs/ncurses-rs
+	url = https://github.com/jeaye/ncurses-rs.git
