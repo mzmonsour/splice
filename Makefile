@@ -29,3 +29,4 @@ spliced: src/spliced/main.rs bindir deps libsplice
 clean:
 	rm -f bin/*
 	rm -f lib/*
+	$(MAKE) -C extlibs/rust-toml clean
