@@ -11,7 +11,7 @@ all: libsplice spliced splice
 # Cheap dependency resolution using submodules and make rules
 # Definitely change once an appropriate package manager exists
 deps: extlibs/rust-toml/Makefile extlibs/ncurses-rs/Makefile
-	$(MAKE) -C extlibs/rust-toml
+	$(MAKE) -C extlibs/rust-toml lib
 	$(MAKE) -C extlibs/ncurses-rs
 
 libdir:
