@@ -9,16 +9,23 @@ use std::io::net::ip::{SocketAddr, Ipv4Addr};
 pub mod conf;
 pub mod proto;
 
-pub fn connect(addr: &str, port: u16) -> IoResult<(Upstream, Downstream)> {
-    let stream = try!(TcpStream::connect(addr, port));
-    Ok((
-        Upstream {
-            sock: stream.clone()
+pub fn connect(addr: &str, port: u16) -> Result<(Upstream, Downstream), proto::NegotiateError> {
+     match TcpStream::connect(addr, port) {
+        Ok(mut stream) => {
+            match proto::negotiate(&mut stream).err() {
+                Some(e) => Err(e),
+                None => Ok((
+                    Upstream {
+                        sock: stream.clone()
+                    },
+                    Downstream {
+                        sock: stream
+                    }
+                )),
+            }
         },
-        Downstream {
-            sock: stream
-        }
-    ))
+        Err(..) => Err(proto::NegotiateFailed),
+    }
 }
 
 pub struct Upstream {
