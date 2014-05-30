@@ -26,8 +26,8 @@ libsplice: src/libsplice/lib.rs libdir deps
 spliced: src/spliced/main.rs bindir deps libsplice
 	$(RUSTC) $(DEPS) $(RUST_FLAGS) --out-dir bin $<
 
-#splice: src/splice/main.rs bindir deps libsplice
-#	$(RUSTC) $(DEPS) $(RUST_FLAGS) --out-dir bin $<
+splice: src/splice/main.rs bindir deps libsplice
+	$(RUSTC) $(DEPS) $(RUST_FLAGS) --out-dir bin $<
 
 clean:
 	rm -f bin/*
