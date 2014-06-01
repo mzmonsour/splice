@@ -1,5 +1,7 @@
 use std::io::net::tcp::TcpStream;
 
+pub mod raw;
+
 pub static MAGIC_BYTES: &'static [u8] = bytes!("SPLICEPROTO");
 pub static PROTO_VER_MAJOR: i32 = 0;
 pub static PROTO_VER_MINOR: i32 = 1;
@@ -16,12 +18,6 @@ pub struct StreamHeader {
     pub magic: Vec<u8>,
     pub major_ver: i32,
     pub minor_ver: i32,
-}
-
-#[deriving(FromPrimitive)]
-pub enum AuthType {
-    NoAuth,
-    FileSecret, // Unimplemented
 }
 
 pub fn negotiate(stream: &mut TcpStream) -> Result<(), NegotiateError> {
@@ -41,9 +37,9 @@ pub fn negotiate(stream: &mut TcpStream) -> Result<(), NegotiateError> {
         Some(v) => v,
         None => return Err(NegotiateFailed),
     };
-    match ::std::num::from_int::<AuthType>(auth as int) {
-        Some(NoAuth) => Ok(()),
-        Some(FileSecret) => Err(AuthenticationFailed),
+    match ::std::num::from_int::<raw::AuthType>(auth as int) {
+        Some(raw::NoAuth) => Ok(()),
+        Some(raw::FileSecret) => Err(AuthenticationFailed),
         None => Err(AuthenticationFailed),
     }
 }

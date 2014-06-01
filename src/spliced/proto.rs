@@ -1,6 +1,7 @@
 use std::io::net::tcp::TcpStream;
 
 use super::splice;
+use splice::proto::raw;
 pub use splice::proto::{NegotiateError, ProtocolOutdated, AuthenticationFailed};
 pub use splice::proto::StreamHeader;
 pub use splice::proto::verify_header;
@@ -29,11 +30,11 @@ pub fn negotiate(stream: &mut TcpStream, auth: &Option<AuthMethod>) -> Result<()
     }
     match *auth {
         Some(FileSecret(ref p)) => {
-            stream.write_be_i32(splice::proto::FileSecret as i32);
+            stream.write_be_i32(raw::FileSecret as i32);
             auth_file_secret(stream, p)
         },
         None => {
-            stream.write_be_i32(splice::proto::NoAuth as i32);
+            stream.write_be_i32(raw::NoAuth as i32);
             Ok(())
         },
     }
