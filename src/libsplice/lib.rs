@@ -3,6 +3,8 @@
 #![crate_type = "rlib"]
 #![crate_type = "dylib"]
 
+extern crate serialize;
+
 use std::io::{TcpStream, IoResult};
 use std::io::net::ip::{SocketAddr, Ipv4Addr};
 
@@ -60,7 +62,7 @@ impl Downstream {
     }
 }
 
-type Object = uint;
+type Object = u64;
 
 pub enum Response {
     BufferOpened(Object, Buffer),

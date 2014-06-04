@@ -4,6 +4,7 @@
 
 extern crate green;
 extern crate rustuv;
+extern crate serialize;
 extern crate splice;
 
 mod conn;

@@ -1,9 +1,12 @@
 use std::io::net::tcp::TcpStream;
+use std::io::{IoResult, IoError, OtherIoError, MemReader};
+use serialize::{Encoder, Decoder, Encodable, Decodable};
+use serialize::json;
 
 use super::splice;
 use splice::proto::raw;
 pub use splice::proto::{NegotiateError, ProtocolOutdated, AuthenticationFailed};
-pub use splice::proto::StreamHeader;
+pub use splice::proto::{StreamHeader, RequestHeader, RequestId, Request};
 pub use splice::proto::verify_header;
 
 pub static MAGIC_BYTES: &'static [u8] = bytes!("SPLICEPROTO");
@@ -36,6 +39,32 @@ pub fn negotiate(stream: &mut TcpStream, auth: &Option<AuthMethod>) -> Result<()
         None => {
             stream.write_be_i32(raw::NoAuth as i32);
             Ok(())
+        },
+    }
+}
+
+pub fn recv_request(stream: &mut TcpStream) -> IoResult<(RequestId, Request)> {
+    let id = try!(stream.read_be_u64());
+    let len = try!(stream.read_be_u64());
+    let mut buf = MemReader::new(try!(stream.read_exact(len as uint)));
+    let mut decoder = match json::from_reader(&mut buf) {
+        Ok(json) => json::Decoder::new(json),
+        Err(e) => {
+            return Err(IoError {
+                kind: OtherIoError,
+                desc: "Decode failed",
+                detail: None,
+            });
+        },
+    };
+    match Decodable::decode(&mut decoder) {
+        Ok(v) => Ok((id, v)),
+        Err(e) => {
+            Err(IoError {
+                kind: OtherIoError,
+                desc: "Decode failed",
+                detail: None,
+            })
         },
     }
 }

@@ -1,4 +1,8 @@
 use std::io::net::tcp::TcpStream;
+use std::io::{MemWriter, IoResult};
+use serialize::{Encoder, Decoder, Encodable, Decodable};
+use serialize::json;
+use Object;
 
 pub mod raw;
 
@@ -18,6 +22,21 @@ pub struct StreamHeader {
     pub magic: Vec<u8>,
     pub major_ver: i32,
     pub minor_ver: i32,
+}
+
+pub type RequestId = u64;
+pub struct RequestHeader {
+    pub id: RequestId,
+    pub len: u64,
+}
+
+#[deriving(Encodable, Decodable)]
+pub enum Request {
+    KeepAlive,
+    OpenBuffer(Object),
+    OpenFile(Path),
+    Close(Object),
+    RunCommand, // Implement me
 }
 
 pub fn negotiate(stream: &mut TcpStream) -> Result<(), NegotiateError> {
@@ -42,6 +61,19 @@ pub fn negotiate(stream: &mut TcpStream) -> Result<(), NegotiateError> {
         Some(raw::FileSecret) => Err(AuthenticationFailed),
         None => Err(AuthenticationFailed),
     }
+}
+
+pub fn send_request(stream: &mut TcpStream, id: RequestId, data: &Request) -> IoResult<()> {
+    let mut buf = MemWriter::new();
+    {
+        let mut encoder = json::Encoder::new(&mut buf);
+        try!(data.encode(&mut encoder));
+    }
+    let buf = buf.unwrap();
+    try!(stream.write_be_u64(id));
+    try!(stream.write_be_u64(buf.len() as u64));
+    try!(stream.write(buf.as_slice()));
+    Ok(())
 }
 
 pub fn verify_header(stream: &mut TcpStream, header: StreamHeader)
