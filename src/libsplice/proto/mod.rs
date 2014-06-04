@@ -1,5 +1,5 @@
 use std::io::net::tcp::TcpStream;
-use std::io::{MemWriter, IoResult};
+use std::io::{IoResult, IoError, OtherIoError, MemWriter, MemReader};
 use serialize::{Encoder, Decoder, Encodable, Decodable};
 use serialize::json;
 use Object;
@@ -39,6 +39,21 @@ pub enum Request {
     RunCommand, // Implement me
 }
 
+pub type ResponseId = u64;
+pub struct ResponseHeader {
+    pub id: ResponseId,
+    pub from: RequestId,
+    pub len: u64,
+}
+
+#[deriving(Encodable, Decodable)]
+pub enum Response {
+    Ack,
+    Allow,
+    Deny,
+    Handle(Object),
+}
+
 pub fn negotiate(stream: &mut TcpStream) -> Result<(), NegotiateError> {
     let StreamHeader {
         magic: magic,
@@ -74,6 +89,35 @@ pub fn send_request(stream: &mut TcpStream, id: RequestId, data: &Request) -> Io
     try!(stream.write_be_u64(buf.len() as u64));
     try!(stream.write(buf.as_slice()));
     Ok(())
+}
+
+pub fn recv_response(stream: &mut TcpStream) -> IoResult<(ResponseHeader, Response)> {
+    let header = ResponseHeader {
+        id: try!(stream.read_be_u64()),
+        from: try!(stream.read_be_u64()),
+        len: try!(stream.read_be_u64()),
+    };
+    let mut buf = MemReader::new(try!(stream.read_exact(header.len as uint)));
+    let mut decoder = match json::from_reader(&mut buf) {
+        Ok(json) => json::Decoder::new(json),
+        Err(..) => {
+            return Err(IoError {
+                kind: OtherIoError,
+                desc: "Decode failed",
+                detail: None,
+            });
+        }
+    };
+    match Decodable::decode(&mut decoder) {
+        Ok(v) => Ok((header, v)),
+        Err(..) => {
+            Err(IoError {
+                kind: OtherIoError,
+                desc: "Decode failed",
+                detail: None,
+            })
+        },
+    }
 }
 
 pub fn verify_header(stream: &mut TcpStream, header: StreamHeader)

@@ -1,12 +1,14 @@
 use std::io::net::tcp::TcpStream;
-use std::io::{IoResult, IoError, OtherIoError, MemReader};
+use std::io::{IoResult, IoError, OtherIoError, MemWriter, MemReader};
 use serialize::{Encoder, Decoder, Encodable, Decodable};
 use serialize::json;
 
 use super::splice;
 use splice::proto::raw;
 pub use splice::proto::{NegotiateError, ProtocolOutdated, AuthenticationFailed};
-pub use splice::proto::{StreamHeader, RequestHeader, RequestId, Request};
+pub use splice::proto::StreamHeader;
+pub use splice::proto::{RequestHeader, RequestId, Request};
+pub use splice::proto::{ResponseHeader, ResponseId, Response};
 pub use splice::proto::verify_header;
 
 pub static MAGIC_BYTES: &'static [u8] = bytes!("SPLICEPROTO");
@@ -67,6 +69,21 @@ pub fn recv_request(stream: &mut TcpStream) -> IoResult<(RequestId, Request)> {
             })
         },
     }
+}
+
+pub fn send_response(stream: &mut TcpStream, id: ResponseId, from: RequestId, data: &Response)
+                     -> IoResult<()> {
+    let mut buf = MemWriter::new();
+    {
+        let mut encoder = json::Encoder::new(&mut buf);
+        try!(data.encode(&mut encoder));
+    }
+    let buf = buf.unwrap();
+    try!(stream.write_be_u64(id));
+    try!(stream.write_be_u64(from));
+    try!(stream.write_be_u64(buf.len() as u64));
+    try!(stream.write(buf.as_slice()));
+    Ok(())
 }
 
 // TODO: Implement file based secret authentication method
