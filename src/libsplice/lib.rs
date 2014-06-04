@@ -8,6 +8,8 @@ extern crate serialize;
 use std::io::{TcpStream, IoResult};
 use std::io::net::ip::{SocketAddr, Ipv4Addr};
 
+pub use proto::{RequestId, Request, Response};
+
 pub mod conf;
 pub mod proto;
 
@@ -18,7 +20,8 @@ pub fn connect(addr: &str, port: u16) -> Result<(Upstream, Downstream), proto::N
                 Some(e) => Err(e),
                 None => Ok((
                     Upstream {
-                        sock: stream.clone()
+                        sock: stream.clone(),
+                        send_id: 0,
                     },
                     Downstream {
                         sock: stream
@@ -31,7 +34,8 @@ pub fn connect(addr: &str, port: u16) -> Result<(Upstream, Downstream), proto::N
 }
 
 pub struct Upstream {
-    sock: TcpStream
+    sock: TcpStream,
+    send_id: RequestId,
 }
 
 impl Drop for Upstream {
@@ -41,8 +45,11 @@ impl Drop for Upstream {
 }
 
 impl Upstream {
-    pub fn send_request(&self, req: &Request) -> IoResult<()> {
-        Ok(())
+    pub fn send_request(&mut self, req: &Request) -> IoResult<RequestId> {
+        try!(proto::send_request(&mut self.sock, self.send_id, req));
+        let result = Ok(self.send_id);
+        self.send_id += 1;
+        result
     }
 }
 
@@ -57,20 +64,17 @@ impl Drop for Downstream {
 }
 
 impl Downstream {
-    pub fn get_response(&self) -> Option<Response> {
-        None
+    pub fn get_response(&mut self) -> IoResult<(RequestId, Response)> {
+        let (proto::ResponseHeader {
+            id: id,
+            from: from,
+            len: _,
+        }, resp) = try!(proto::recv_response(&mut self.sock));
+        Ok((from, resp))
     }
 }
 
 type Object = u64;
-
-pub enum Response {
-    BufferOpened(Object, Buffer),
-    BufferChanged(Object, Differ),
-    ConnectionClosed,
-    Empty,
-    Unknown
-}
 
 pub struct Buffer {
     path:   ~str,
@@ -85,4 +89,3 @@ impl Buffer {
 }
 
 pub struct Differ;
-pub struct Request;

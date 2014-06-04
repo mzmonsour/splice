@@ -4,7 +4,8 @@ use std::io::net::tcp::{TcpListener, TcpAcceptor, TcpStream};
 use std::io::{Acceptor, Listener};
 use std::io::IoResult;
 
-use super::proto;
+use proto;
+pub use proto::{RequestId, Request, ResponseId, Response};
 
 pub struct Server {
     acceptor: TcpAcceptor,
@@ -38,6 +39,7 @@ impl FutureClient {
         try!(proto::negotiate(&mut self.stream, &self.auth));
         Ok((Downstream {
             stream: self.stream.clone(),
+            send_id: 0,
         },
         Upstream {
             stream: self.stream,
@@ -47,8 +49,24 @@ impl FutureClient {
 
 struct Downstream {
     stream: TcpStream,
+    send_id: ResponseId,
 }
 
 struct Upstream {
     stream: TcpStream,
+}
+
+impl Downstream {
+    pub fn send_response(&mut self, from: RequestId, resp: &Response) -> IoResult<ResponseId> {
+        try!(proto::send_response(&mut self.stream, self.send_id, from, resp));
+        let result = Ok(self.send_id);
+        self.send_id += 1;
+        result
+    }
+}
+
+impl Upstream {
+    pub fn get_request(&mut self) -> IoResult<(RequestId, Request)> {
+        proto::recv_request(&mut self.stream)
+    }
 }
