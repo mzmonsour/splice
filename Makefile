@@ -1,7 +1,7 @@
 RUSTC ?= rustc
 RUST_FLAGS ?= -O
 DEPS = -L extlibs/rust-toml/lib \
-	   -L extlibs/ncurses-rs/lib \
+	   -L extlibs/ncurses-rs/target \
 	   -L lib
 
 .PHONY: deps libsplice spliced splice libdir bindir

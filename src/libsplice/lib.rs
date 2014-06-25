@@ -77,7 +77,7 @@ impl Downstream {
 type Object = u64;
 
 pub struct Buffer {
-    path:   ~str,
+    path:   Path,
     id:     Object,
     start:  uint,
     buf:    Vec<String>

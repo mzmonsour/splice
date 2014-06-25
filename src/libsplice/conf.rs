@@ -1,4 +1,4 @@
-extern crate toml;
+extern crate toml = "rust-toml";
 
 use std::io::net::ip::SocketAddr;
 use std::from_str::FromStr;
