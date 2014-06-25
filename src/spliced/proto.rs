@@ -8,7 +8,9 @@ use splice::proto::raw;
 pub use splice::proto::{NegotiateError, ProtocolOutdated, AuthenticationFailed};
 pub use splice::proto::StreamHeader;
 pub use splice::proto::{RequestHeader, RequestId, Request};
+pub use splice::proto::{KeepAlive, OpenBuffer, OpenFile, RunCommand};
 pub use splice::proto::{ResponseHeader, ResponseId, Response};
+pub use splice::proto::{Ack, Allow, Deny, Handle};
 pub use splice::proto::verify_header;
 
 pub static MAGIC_BYTES: &'static [u8] = bytes!("SPLICEPROTO");

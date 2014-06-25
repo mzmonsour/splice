@@ -7,6 +7,11 @@ extern crate rustuv;
 extern crate serialize;
 extern crate splice;
 
+use std::comm::{Disconnected, Empty};
+use proto::{KeepAlive, OpenBuffer, OpenFile, RunCommand};
+use proto::{Ack, Allow, Deny, Handle};
+use proto::{RequestId, Request};
+
 mod conn;
 mod proto;
 
@@ -25,8 +30,38 @@ fn main() {
             match raw_client.ok() {
                 Some(c) => {
                     match c.negotiate().ok() {
-                        Some((down, up)) => {
+                        Some((down, mut up)) => {
                             println!("Negotiated");
+                            let (tx, rx) = channel::<(RequestId, Request)>();
+                            spawn(proc() {
+                                let mut down = down;
+                                'resp: loop {
+                                    match rx.try_recv() {
+                                        Ok((id, req)) => {
+                                            match down.send_response(id, &match req {
+                                                KeepAlive => Ack,
+                                                _ => Deny, // Deny unimplemented requests
+                                            }) {
+                                                _ => (), // Ignore errors for now
+                                            }
+                                        },
+                                        Err(Disconnected) => break 'resp,
+                                        Err(Empty) => (),
+                                    };
+                                }
+                            });
+                            'req: loop {
+                                match up.get_request() {
+                                    Ok(v) => match tx.send_opt(v) {
+                                        Err(..) => break 'req,
+                                        _ => (),
+                                    },
+                                    Err(e) => match e.kind {
+                                        std::io::Closed => break 'req,
+                                        _ => (),
+                                    },
+                                };
+                            }
                         }
                         None => println!("Negotiate failed"),
                     }
