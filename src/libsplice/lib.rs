@@ -6,7 +6,6 @@
 extern crate serialize;
 
 use std::io::{TcpStream, IoResult};
-use std::io::net::ip::{SocketAddr, Ipv4Addr};
 
 pub use proto::{RequestId, Request, Response};
 
@@ -40,7 +39,9 @@ pub struct Upstream {
 
 impl Drop for Upstream {
     fn drop(&mut self) {
-        self.sock.close_write();
+        match self.sock.close_write() {
+            _ => (),
+        };
     }
 }
 
@@ -59,7 +60,9 @@ pub struct Downstream {
 
 impl Drop for Downstream {
     fn drop(&mut self) {
-        self.sock.close_read();
+        match self.sock.close_read() {
+            _ => (),
+        };
     }
 }
 
@@ -74,7 +77,7 @@ impl Downstream {
     }
 }
 
-type Object = u64;
+pub type Object = u64;
 
 pub struct Buffer {
     path:   Path,

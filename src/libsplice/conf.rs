@@ -1,8 +1,5 @@
 extern crate toml = "rust-toml";
 
-use std::io::net::ip::SocketAddr;
-use std::from_str::FromStr;
-
 // TODO: Add a Windows implementation of this function
 #[cfg(unix)]
 pub fn default_path() -> Option<Path> {
@@ -22,7 +19,7 @@ pub fn load_default() -> Option<Config> {
 pub fn load(loc: &Path) -> Option<Config> {
     let toml = match toml::parse_from_path(loc) {
         Ok(v) => v,
-        Err(e) => return None
+        Err(..) => return None
     };
     Some(Config {
         default_server_addr:

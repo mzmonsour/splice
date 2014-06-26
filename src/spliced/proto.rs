@@ -1,11 +1,10 @@
 use std::io::net::tcp::TcpStream;
 use std::io::{IoResult, IoError, OtherIoError, MemWriter, MemReader};
-use serialize::{Encoder, Decoder, Encodable, Decodable};
+use serialize::{Encodable, Decodable};
 use serialize::json;
 
-use super::splice;
 use splice::proto::raw;
-pub use splice::proto::{NegotiateError, ProtocolOutdated, AuthenticationFailed};
+pub use splice::proto::{NegotiateError, ProtocolOutdated, AuthenticationFailed, NegotiateFailed};
 pub use splice::proto::StreamHeader;
 pub use splice::proto::{RequestHeader, RequestId, Request};
 pub use splice::proto::{KeepAlive, OpenBuffer, OpenFile, RunCommand};
@@ -13,7 +12,7 @@ pub use splice::proto::{ResponseHeader, ResponseId, Response};
 pub use splice::proto::{Ack, Allow, Deny, Handle};
 pub use splice::proto::verify_header;
 
-pub static MAGIC_BYTES: &'static [u8] = bytes!("SPLICEPROTO");
+pub static MAGIC_BYTES: &'static [u8] = b"SPLICEPROTO";
 pub static PROTO_VER_MAJOR: i32 = 0;
 pub static PROTO_VER_MINOR: i32 = 1;
 
@@ -24,9 +23,7 @@ pub enum AuthMethod {
 
 pub fn negotiate(stream: &mut TcpStream, auth: &Option<AuthMethod>) -> Result<(), NegotiateError> {
     let StreamHeader {
-        magic: magic,
-        major_ver: major_ver,
-        minor_ver: minor_ver,
+        major_ver: major_ver, ..
     } = try!(verify_header(stream, StreamHeader {
         magic: Vec::from_slice(MAGIC_BYTES),
         major_ver: PROTO_VER_MAJOR,
@@ -37,11 +34,17 @@ pub fn negotiate(stream: &mut TcpStream, auth: &Option<AuthMethod>) -> Result<()
     }
     match *auth {
         Some(FileSecret(ref p)) => {
-            stream.write_be_i32(raw::FileSecret as i32);
+            match stream.write_be_i32(raw::FileSecret as i32) {
+                Ok(..) => (),
+                Err(..) => return Err(NegotiateFailed),
+            };
             auth_file_secret(stream, p)
         },
         None => {
-            stream.write_be_i32(raw::NoAuth as i32);
+            match stream.write_be_i32(raw::NoAuth as i32) {
+                Ok(..) => (),
+                Err(..) => return Err(NegotiateFailed),
+            };
             Ok(())
         },
     }
@@ -53,7 +56,7 @@ pub fn recv_request(stream: &mut TcpStream) -> IoResult<(RequestId, Request)> {
     let mut buf = MemReader::new(try!(stream.read_exact(len as uint)));
     let mut decoder = match json::from_reader(&mut buf) {
         Ok(json) => json::Decoder::new(json),
-        Err(e) => {
+        Err(..) => {
             return Err(IoError {
                 kind: OtherIoError,
                 desc: "Decode failed",
@@ -63,7 +66,7 @@ pub fn recv_request(stream: &mut TcpStream) -> IoResult<(RequestId, Request)> {
     };
     match Decodable::decode(&mut decoder) {
         Ok(v) => Ok((id, v)),
-        Err(e) => {
+        Err(..) => {
             Err(IoError {
                 kind: OtherIoError,
                 desc: "Decode failed",

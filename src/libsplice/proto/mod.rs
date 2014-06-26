@@ -6,7 +6,7 @@ use Object;
 
 pub mod raw;
 
-pub static MAGIC_BYTES: &'static [u8] = bytes!("SPLICEPROTO");
+pub static MAGIC_BYTES: &'static [u8] = b"SPLICEPROTO";
 pub static PROTO_VER_MAJOR: i32 = 0;
 pub static PROTO_VER_MINOR: i32 = 1;
 
@@ -56,9 +56,7 @@ pub enum Response {
 
 pub fn negotiate(stream: &mut TcpStream) -> Result<(), NegotiateError> {
     let StreamHeader {
-        magic: magic,
-        major_ver: major_ver,
-        minor_ver: minor_ver,
+        major_ver: major_ver, ..
     } = try!(verify_header(stream, StreamHeader {
         magic: Vec::from_slice(MAGIC_BYTES),
         major_ver: PROTO_VER_MAJOR,
@@ -122,9 +120,18 @@ pub fn recv_response(stream: &mut TcpStream) -> IoResult<(ResponseHeader, Respon
 
 pub fn verify_header(stream: &mut TcpStream, header: StreamHeader)
                      -> Result<StreamHeader, NegotiateError> {
-    stream.write(header.magic.as_slice());
-    stream.write_be_i32(header.major_ver);
-    stream.write_be_i32(header.minor_ver);
+    match stream.write(header.magic.as_slice()) {
+        Ok(..) => (),
+        Err(..) => return Err(NegotiateFailed),
+    };
+    match stream.write_be_i32(header.major_ver) {
+        Ok(..) => (),
+        Err(..) => return Err(NegotiateFailed),
+    };
+    match stream.write_be_i32(header.minor_ver) {
+        Ok(..) => (),
+        Err(..) => return Err(NegotiateFailed),
+    };
     let magic = match stream.read_exact(MAGIC_BYTES.len()).ok() {
         Some(v) => v,
         None => return Err(NegotiateFailed),
